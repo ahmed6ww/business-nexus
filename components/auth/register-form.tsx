@@ -41,7 +41,7 @@ export function RegisterForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="accountType">Account Type</Label>
-          <div className="flex gap-4">
+          <div className="flex gap-4 ">
             <div className="flex items-center gap-2">
               <input
                 type="radio"
@@ -51,11 +51,11 @@ export function RegisterForm({
                 className="h-4 w-4"
                 defaultChecked
               />
-              <label htmlFor="entrepreneur" className="text-sm">
+              <label htmlFor="entrepreneur" className="text-sm hover:cursor-pointer">
                 Entrepreneur
               </label>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ">
               <input
                 type="radio"
                 id="investor"
@@ -63,13 +63,13 @@ export function RegisterForm({
                 value="investor"
                 className="h-4 w-4"
               />
-              <label htmlFor="investor" className="text-sm">
+              <label htmlFor="investor" className="text-sm hover:cursor-pointer">
                 Investor
               </label>
             </div>
           </div>
         </div>
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full hover:cursor-pointer">
           Register
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
@@ -77,7 +77,7 @@ export function RegisterForm({
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full hover:cursor-pointer hover:shadow-stone-400">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">
             <path
               fill="#4285F4"
