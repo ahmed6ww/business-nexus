@@ -33,7 +33,7 @@ export function LoginForm({
           </div>
           <Input id="password" type="password" required />
         </div>
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full hover:cursor-pointer">
           Login
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
@@ -41,7 +41,7 @@ export function LoginForm({
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full hover:cursor-pointer hover:shadow-stone-400">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">
             <path
               fill="#4285F4"
