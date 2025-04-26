@@ -10,8 +10,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginAction } from "@/lib/actions/auth";
-import { LoginResponse } from "@/lib/types";
+import { signIn } from "next-auth/react";
 
 // Define the login form validation schema
 const loginSchema = z.object({
@@ -52,31 +51,28 @@ export function LoginForm({
       setApiError(null);
       setSuccessMessage(null);
 
-      // Use the server action to log in
-      const result = await loginAction(data);
+      // Get the callback URL (where to redirect after login)
+      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
-      if (!result.success) {
-        setApiError(result.error || "Login failed");
+      // Use NextAuth.js signIn function
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+        callbackUrl,
+      });
+
+      if (!result?.ok) {
+        setApiError(result?.error || "Failed to login");
         return;
       }
 
-      // Login successful, redirect based on user role
-      if (result.user) {
-        // Reset form
-        reset();
-        
-        // Redirect based on user role
-        if (result.user.role === 'entrepreneur') {
-          router.push("/dashboard/entrepreneur");
-        } else if (result.user.role === 'investor') {
-          router.push("/dashboard/investor");
-        } else {
-          router.push("/dashboard");
-        }
-        
-        // Ensure the router completes navigation
-        router.refresh();
-      }
+      // Reset form
+      reset();
+      
+      // Redirect based on user role (we'll fetch this after we're redirected)
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       console.error("Login error:", error);
       setApiError("An unexpected error occurred. Please try again.");
@@ -159,8 +155,7 @@ export function LoginForm({
           variant="outline" 
           className="w-full hover:cursor-pointer hover:shadow-stone-400"
           onClick={() => {
-            // Handle Google sign-in (to be implemented later)
-            console.log("Google sign-in");
+            signIn("google", { callbackUrl: "/dashboard" });
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LightbulbIcon, TrendingUp, Users, Check, X, Clock, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { logoutAction } from '@/lib/actions/auth';
+import { signOut } from 'next-auth/react';
 
 // Define the request type
 interface CollaborationRequest {
@@ -123,7 +123,7 @@ export default function EntrepreneurDashboard() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await logoutAction();
+      await signOut({ redirect: true, callbackUrl: '/login' });
     } catch (error) {
       console.error('Error logging out:', error);
       setIsLoggingOut(false);

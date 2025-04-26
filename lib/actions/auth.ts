@@ -1,10 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { registerUser, authenticateUser } from '../auth';
 import { LoginRequest, RegistrationRequest } from '../types';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { authOptions } from '../auth.config';
+import { getServerSession } from 'next-auth';
 
 /**
  * Server action to register a new user
@@ -69,23 +71,9 @@ export async function loginAction(formData: LoginRequest) {
       };
     }
 
-    // Set a session cookie (in a real app, you'd want to use a proper session management solution)
-    const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    const cookieStore = await cookies();
-    cookieStore.set({
-      name: 'user_session',
-      value: user.id,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: oneWeek,
-      path: '/',
-    });
-
-    // Return success response
-    return {
-      success: true,
-      user,
-    };
+    // For NextAuth to handle the session, we need to redirect to the sign-in callback
+    // Using a server action, we'll pass callbackUrl to redirect properly after auth
+    redirect(`/api/auth/callback/credentials?email=${encodeURIComponent(formData.email)}&password=${encodeURIComponent(formData.password)}`);
   } catch (error) {
     console.error('Login error:', error);
     return {
@@ -99,8 +87,13 @@ export async function loginAction(formData: LoginRequest) {
  * Server action to log out a user
  */
 export async function logoutAction() {
+  // Using NextAuth's signOut in server components requires a different approach
+  // We'll manually clear session cookies
   const cookieStore = await cookies();
-  cookieStore.delete('user_session');
+  cookieStore.delete('next-auth.session-token');
+  cookieStore.delete('next-auth.csrf-token');
+  cookieStore.delete('next-auth.callback-url');
+  
   revalidatePath('/');
   redirect('/login');
 }

@@ -2,7 +2,8 @@ import { db } from '@/db';
 import { users, type UserRole } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { compare, hash } from 'bcrypt';
-import { cookies } from 'next/headers';
+import { getServerSession } from "next-auth";
+import { authOptions } from "./auth.config";
 
 export type AuthUser = {
   id: string;
@@ -97,19 +98,18 @@ export async function getUserById(id: string) {
 }
 
 /**
- * Get the current authenticated user from session cookie
+ * Get the current authenticated user from session
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('user_session')?.value;
+    const session = await getServerSession(authOptions);
     
-    if (!sessionId) {
+    if (!session?.user?.id) {
       return null;
     }
     
-    // Get user data from database using session ID
-    return await getUserById(sessionId);
+    // You could just return session.user, but this ensures fresh data
+    return await getUserById(session.user.id);
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
@@ -120,6 +120,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  * Check if the current user is authenticated
  */
 export async function isAuthenticated(): Promise<boolean> {
-  const user = await getCurrentUser();
-  return user !== null;
+  const session = await getServerSession(authOptions);
+  return !!session?.user;
 }

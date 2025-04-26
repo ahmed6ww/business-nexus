@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { UserPlus, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { logoutAction } from '@/lib/actions/auth';
+import { signOut } from 'next-auth/react';
 
 // Define entrepreneur type
 interface Entrepreneur {
@@ -83,7 +83,7 @@ export default function InvestorDashboard() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await logoutAction();
+      await signOut({ redirect: true, callbackUrl: '/login' });
     } catch (error) {
       console.error('Error logging out:', error);
       setIsLoggingOut(false);
