@@ -1,9 +1,9 @@
-import { NextAuthOptions } from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
 import { db } from "@/db";
+import { UserRole, users } from "@/db/schema";
 import { compare } from "bcrypt";
 import { eq } from "drizzle-orm";
-import { users, UserRole } from "@/db/schema";
+import { NextAuthOptions } from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 
 // Extend the built-in NextAuth types to include our custom properties
 declare module "next-auth" {
@@ -75,7 +75,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user }) {
       if (user) {
         return {
           ...token,

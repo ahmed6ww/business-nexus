@@ -1,5 +1,5 @@
-import { pgTable, text, varchar, timestamp } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
+import { pgTable, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // Define user roles as a type
 export type UserRole = 'entrepreneur' | 'investor' | 'admin';

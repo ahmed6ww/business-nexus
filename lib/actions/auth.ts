@@ -1,12 +1,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { registerUser, authenticateUser } from '../auth';
-import { LoginRequest, RegistrationRequest } from '../types';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { authOptions } from '../auth.config';
-import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
+import { authenticateUser, registerUser } from '../auth';
+import { LoginRequest, RegistrationRequest } from '../types';
 
 /**
  * Server action to register a new user
