@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Menu, Search, Bell, User } from "lucide-react";
+import { Menu, Search, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";

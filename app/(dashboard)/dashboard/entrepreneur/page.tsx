@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LightbulbIcon, TrendingUp, Users, Briefcase, CalendarDays, Check, X, Clock } from 'lucide-react';
+import { LightbulbIcon, TrendingUp, Users, Check, X, Clock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Define the request type
@@ -150,7 +150,7 @@ export default function EntrepreneurDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, let's grow your business!</p>
+        <p className="text-muted-foreground">Welcome back, let&aposs grow your business!</p>
       </div>
       
       {/* Entrepreneur-specific stats */}
