@@ -1,25 +1,126 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginAction } from "@/lib/actions/auth";
+import { LoginResponse } from "@/lib/types";
+
+// Define the login form validation schema
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(
+    searchParams.get("registered") === "true" 
+      ? "Registration successful! Please log in with your new account."
+      : null
+  );
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      setApiError(null);
+      setSuccessMessage(null);
+
+      // Use the server action to log in
+      const result = await loginAction(data);
+
+      if (!result.success) {
+        setApiError(result.error || "Login failed");
+        return;
+      }
+
+      // Login successful, redirect based on user role
+      if (result.user) {
+        // Reset form
+        reset();
+        
+        // Redirect based on user role
+        if (result.user.role === 'entrepreneur') {
+          router.push("/dashboard/entrepreneur");
+        } else if (result.user.role === 'investor') {
+          router.push("/dashboard/investor");
+        } else {
+          router.push("/dashboard");
+        }
+        
+        // Ensure the router completes navigation
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setApiError("An unexpected error occurred. Please try again.");
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form 
+      className={cn("flex flex-col gap-6", className)} 
+      onSubmit={handleSubmit(onSubmit)}
+      {...props}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
           Enter your email below to login to your account
         </p>
       </div>
+
+      {successMessage && (
+        <div className="p-3 bg-green-100 border border-green-300 text-green-700 rounded-md text-sm">
+          {successMessage}
+        </div>
+      )}
+
+      {apiError && (
+        <div className="p-3 bg-red-100 border border-red-300 text-red-500 rounded-md text-sm">
+          {apiError}
+        </div>
+      )}
+
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="m@example.com" 
+            {...register("email")}
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
@@ -31,17 +132,37 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" required />
+          <Input 
+            id="password" 
+            type="password" 
+            {...register("password")}
+            aria-invalid={errors.password ? "true" : "false"}
+          />
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
         </div>
-        <Button type="submit" className="w-full hover:cursor-pointer">
-          Login
+        <Button 
+          type="submit" 
+          className="w-full hover:cursor-pointer"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Logging in..." : "Login"}
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full hover:cursor-pointer hover:shadow-stone-400">
+        <Button 
+          type="button"
+          variant="outline" 
+          className="w-full hover:cursor-pointer hover:shadow-stone-400"
+          onClick={() => {
+            // Handle Google sign-in (to be implemented later)
+            console.log("Google sign-in");
+          }}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">
             <path
               fill="#4285F4"

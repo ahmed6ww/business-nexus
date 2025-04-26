@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { logoutAction } from '@/lib/actions/auth';
 
 // Define entrepreneur type
 interface Entrepreneur {
@@ -50,6 +51,7 @@ const mockEntrepreneurs: Entrepreneur[] = [
 export default function InvestorDashboard() {
   const [entrepreneurs, setEntrepreneurs] = useState<Entrepreneur[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Simulate fetching entrepreneurs from API
   useEffect(() => {
@@ -77,11 +79,34 @@ export default function InvestorDashboard() {
     alert(`Request sent to entrepreneur with ID: ${entrepreneurId}`);
   };
 
+  // Handle user logout
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logoutAction();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Investor Dashboard</h1>
-        <p className="text-muted-foreground">Connect with promising entrepreneurs</p>
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold">Investor Dashboard</h1>
+          <p className="text-muted-foreground">Connect with promising entrepreneurs</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          {isLoggingOut ? "Logging out..." : "Logout"}
+        </Button>
       </div>
       
       {/* Entrepreneur Listings */}
