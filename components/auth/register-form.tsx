@@ -1,15 +1,118 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define the form validation schema
+const registerSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  confirmPassword: z.string(),
+  accountType: z.enum(["entrepreneur", "investor"])
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"]
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  // Following the official React Hook Form example with Zod
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      accountType: "entrepreneur" as const
+    }
+  });
+
+  // Handle form submission
+  const onSubmit = (data: RegisterFormValues) => {
+    try {
+      // Here you would connect to your authentication API
+      console.log("Form data:", data);
+      // Example: await signUp(data);
+      
+      // Mock API call delay
+      setTimeout(() => {
+        // Handle successful registration
+        // You could redirect to login page or show a success message
+        console.log("Registration successful");
+      }, 1000);
+    } catch (error) {
+      console.error("Registration error:", error);
+    }
+  };
+
+  // Password strength indicator
+  const password = watch("password");
+  const getPasswordStrength = (password: string) => {
+    if (!password) return 0;
+    
+    let strength = 0;
+    
+    // Length check
+    if (password.length >= 8) strength += 1;
+    // Uppercase check
+    if (/[A-Z]/.test(password)) strength += 1;
+    // Lowercase check
+    if (/[a-z]/.test(password)) strength += 1;
+    // Number check
+    if (/[0-9]/.test(password)) strength += 1;
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    
+    return strength;
+  };
+
+  const passwordStrength = getPasswordStrength(password || "");
+  
+  const getPasswordStrengthText = () => {
+    if (passwordStrength === 0) return "";
+    if (passwordStrength <= 2) return "Weak";
+    if (passwordStrength <= 4) return "Medium";
+    return "Strong";
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength <= 2) return "bg-red-500";
+    if (passwordStrength <= 4) return "bg-yellow-500";
+    return "bg-green-500";
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form 
+      className={cn("flex flex-col gap-6", className)} 
+      onSubmit={handleSubmit(onSubmit)}
+      {...props}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-balance text-sm text-muted-foreground">
@@ -20,48 +123,100 @@ export function RegisterForm({
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="firstName">First name</Label>
-            <Input id="firstName" type="text" required />
+            <Input 
+              id="firstName" 
+              {...register("firstName")}
+              aria-invalid={errors.firstName ? "true" : "false"}
+            />
+            {errors.firstName && (
+              <p className="text-sm text-red-500">{errors.firstName.message}</p>
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">Last name</Label>
-            <Input id="lastName" type="text" required />
+            <Input 
+              id="lastName" 
+              {...register("lastName")}
+              aria-invalid={errors.lastName ? "true" : "false"}
+            />
+            {errors.lastName && (
+              <p className="text-sm text-red-500">{errors.lastName.message}</p>
+            )}
           </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="m@example.com" 
+            {...register("email")}
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" required />
+          <Input 
+            id="password" 
+            type="password" 
+            {...register("password")}
+            aria-invalid={errors.password ? "true" : "false"}
+          />
+          {password && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${getPasswordStrengthColor()}`}
+                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs">{getPasswordStrengthText()}</span>
+              </div>
+            </div>
+          )}
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input id="confirmPassword" type="password" required />
+          <Input 
+            id="confirmPassword" 
+            type="password" 
+            {...register("confirmPassword")}
+            aria-invalid={errors.confirmPassword ? "true" : "false"}
+          />
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="accountType">Account Type</Label>
-          <div className="flex gap-4 ">
+          <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <input
                 type="radio"
                 id="entrepreneur"
-                name="accountType"
                 value="entrepreneur"
                 className="h-4 w-4"
+                {...register("accountType")}
                 defaultChecked
               />
               <label htmlFor="entrepreneur" className="text-sm hover:cursor-pointer">
                 Entrepreneur
               </label>
             </div>
-            <div className="flex items-center gap-2 ">
+            <div className="flex items-center gap-2">
               <input
                 type="radio"
                 id="investor"
-                name="accountType"
                 value="investor"
                 className="h-4 w-4"
+                {...register("accountType")}
               />
               <label htmlFor="investor" className="text-sm hover:cursor-pointer">
                 Investor
@@ -69,15 +224,27 @@ export function RegisterForm({
             </div>
           </div>
         </div>
-        <Button type="submit" className="w-full hover:cursor-pointer">
-          Register
+        <Button 
+          type="submit" 
+          className="w-full hover:cursor-pointer"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Registering..." : "Register"}
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full hover:cursor-pointer hover:shadow-stone-400">
+        <Button 
+          type="button"
+          variant="outline" 
+          className="w-full hover:cursor-pointer hover:shadow-stone-400"
+          onClick={() => {
+            // Handle Google sign-in
+            console.log("Google sign-in");
+          }}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">
             <path
               fill="#4285F4"
