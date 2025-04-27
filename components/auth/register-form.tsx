@@ -1,19 +1,23 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import React from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { registerAction } from "@/lib/actions/auth";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 // Define the form validation schema
 const registerSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  name: z.object({
+    firstName: z.string().min(2, "First name must be at least 2 characters"),
+    lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  }),
   email: z.string().email("Please enter a valid email address"),
   password: z
     .string()
@@ -23,7 +27,7 @@ const registerSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   confirmPassword: z.string(),
-  accountType: z.enum(["entrepreneur", "investor"])
+  role: z.enum(["entrepreneur", "investor"])
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -35,39 +39,60 @@ export function RegisterForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const router = useRouter();
+  const [apiError, setApiError] = useState<string | null>(null);
+
   // Following the official React Hook Form example with Zod
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
+    reset
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      name: {
+        firstName: "",
+        lastName: ""
+      },
       email: "",
       password: "",
       confirmPassword: "",
-      accountType: "entrepreneur" as const
+      role: "entrepreneur" as const
     }
   });
 
   // Handle form submission
-  const onSubmit = (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     try {
-      // Here you would connect to your authentication API
-      console.log("Form data:", data);
-      // Example: await signUp(data);
+      setApiError(null);
       
-      // Mock API call delay
-      setTimeout(() => {
-        // Handle successful registration
-        // You could redirect to login page or show a success message
-        console.log("Registration successful");
-      }, 1000);
+      // Construct full name from first and last name
+      const fullName = `${data.name.firstName} ${data.name.lastName}`;
+      
+      // Call the registration server action
+      const result = await registerAction({
+        name: fullName,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      });
+      
+      if (!result.success) {
+        setApiError(result.error || "Registration failed");
+        return;
+      }
+      
+      // Reset the form
+      reset();
+      
+      // Registration successful, redirect to login page
+      router.push("/login?registered=true");
+      router.refresh();
     } catch (error) {
       console.error("Registration error:", error);
+      setApiError("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -119,28 +144,35 @@ export function RegisterForm({
           Enter your details below to create your account
         </p>
       </div>
+      
+      {apiError && (
+        <div className="p-3 bg-red-100 border border-red-300 text-red-500 rounded-md text-sm">
+          {apiError}
+        </div>
+      )}
+      
       <div className="grid gap-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="firstName">First name</Label>
             <Input 
               id="firstName" 
-              {...register("firstName")}
-              aria-invalid={errors.firstName ? "true" : "false"}
+              {...register("name.firstName")}
+              aria-invalid={errors.name?.firstName ? "true" : "false"}
             />
-            {errors.firstName && (
-              <p className="text-sm text-red-500">{errors.firstName.message}</p>
+            {errors.name?.firstName && (
+              <p className="text-sm text-red-500">{errors.name.firstName.message}</p>
             )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">Last name</Label>
             <Input 
               id="lastName" 
-              {...register("lastName")}
-              aria-invalid={errors.lastName ? "true" : "false"}
+              {...register("name.lastName")}
+              aria-invalid={errors.name?.lastName ? "true" : "false"}
             />
-            {errors.lastName && (
-              <p className="text-sm text-red-500">{errors.lastName.message}</p>
+            {errors.name?.lastName && (
+              <p className="text-sm text-red-500">{errors.name.lastName.message}</p>
             )}
           </div>
         </div>
@@ -195,7 +227,7 @@ export function RegisterForm({
           )}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="accountType">Account Type</Label>
+          <Label htmlFor="role">Account Type</Label>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <input
@@ -203,7 +235,7 @@ export function RegisterForm({
                 id="entrepreneur"
                 value="entrepreneur"
                 className="h-4 w-4"
-                {...register("accountType")}
+                {...register("role")}
                 defaultChecked
               />
               <label htmlFor="entrepreneur" className="text-sm hover:cursor-pointer">
@@ -216,7 +248,7 @@ export function RegisterForm({
                 id="investor"
                 value="investor"
                 className="h-4 w-4"
-                {...register("accountType")}
+                {...register("role")}
               />
               <label htmlFor="investor" className="text-sm hover:cursor-pointer">
                 Investor
@@ -241,7 +273,7 @@ export function RegisterForm({
           variant="outline" 
           className="w-full hover:cursor-pointer hover:shadow-stone-400"
           onClick={() => {
-            // Handle Google sign-in
+            // Handle Google sign-in (to be implemented later)
             console.log("Google sign-in");
           }}
         >
