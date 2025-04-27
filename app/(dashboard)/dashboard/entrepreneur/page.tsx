@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LightbulbIcon, TrendingUp, Users, Check, X, Clock } from 'lucide-react';
+import { LightbulbIcon, TrendingUp, Users, Check, X, Clock, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { signOut } from 'next-auth/react';
 
 // Define the request type
 interface CollaborationRequest {
@@ -65,6 +66,7 @@ const mockRequests: CollaborationRequest[] = [
 export default function EntrepreneurDashboard() {
   const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Simulate fetching investor requests from API
   useEffect(() => {
@@ -117,6 +119,17 @@ export default function EntrepreneurDashboard() {
     }
   };
   
+  // Handle user logout
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut({ redirect: true, callbackUrl: '/login' });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      setIsLoggingOut(false);
+    }
+  };
+
   // Helper function to get the status badge with appropriate color
   const getStatusBadge = (status: 'Pending' | 'Accepted' | 'Rejected') => {
     switch (status) {
@@ -148,9 +161,21 @@ export default function EntrepreneurDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, let&aposs grow your business!</p>
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, let&apos;s grow your business!</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          {isLoggingOut ? "Logging out..." : "Logout"}
+        </Button>
       </div>
       
       {/* Entrepreneur-specific stats */}

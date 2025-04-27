@@ -1,25 +1,128 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+
+// Define the login form validation schema
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+// This component uses search params and needs to be wrapped in Suspense
+export function LoginMessage() {
+  const searchParams = useSearchParams();
+  const isRegistered = searchParams.get("registered") === "true";
+  
+  if (!isRegistered) return null;
+  
+  return (
+    <div className="p-3 bg-green-100 border border-green-300 text-green-700 rounded-md text-sm">
+      Registration successful! Please log in with your new account.
+    </div>
+  );
+}
 
 export function LoginForm({
   className,
+  callbackUrl,
   ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+}: React.ComponentPropsWithoutRef<"form"> & {
+  callbackUrl?: string;
+}) {
+  const router = useRouter();
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      setApiError(null);
+
+      // Get the callback URL (where to redirect after login)
+      const redirectUrl = callbackUrl || "/dashboard";
+
+      // Use NextAuth.js signIn function
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+        callbackUrl: redirectUrl,
+      });
+
+      if (!result?.ok) {
+        setApiError(result?.error || "Failed to login");
+        return;
+      }
+
+      // Reset form
+      reset();
+      
+      // Redirect based on user role (we'll fetch this after we're redirected)
+      router.push(redirectUrl);
+      router.refresh();
+    } catch (error) {
+      console.error("Login error:", error);
+      setApiError("An unexpected error occurred. Please try again.");
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form 
+      className={cn("flex flex-col gap-6", className)} 
+      onSubmit={handleSubmit(onSubmit)}
+      {...props}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
           Enter your email below to login to your account
         </p>
       </div>
+
+      {/* The success message is now rendered by the LoginMessage component */}
+
+      {apiError && (
+        <div className="p-3 bg-red-100 border border-red-300 text-red-500 rounded-md text-sm">
+          {apiError}
+        </div>
+      )}
+
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="m@example.com" 
+            {...register("email")}
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
@@ -31,17 +134,36 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" required />
+          <Input 
+            id="password" 
+            type="password" 
+            {...register("password")}
+            aria-invalid={errors.password ? "true" : "false"}
+          />
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
         </div>
-        <Button type="submit" className="w-full hover:cursor-pointer">
-          Login
+        <Button 
+          type="submit" 
+          className="w-full hover:cursor-pointer"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Logging in..." : "Login"}
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full hover:cursor-pointer hover:shadow-stone-400">
+        <Button 
+          type="button"
+          variant="outline" 
+          className="w-full hover:cursor-pointer hover:shadow-stone-400"
+          onClick={() => {
+            signIn("google", { callbackUrl: callbackUrl || "/dashboard" });
+          }}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">
             <path
               fill="#4285F4"
