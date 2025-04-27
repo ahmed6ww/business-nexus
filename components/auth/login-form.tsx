@@ -20,18 +20,30 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// This component uses search params and needs to be wrapped in Suspense
+export function LoginMessage() {
+  const searchParams = useSearchParams();
+  const isRegistered = searchParams.get("registered") === "true";
+  
+  if (!isRegistered) return null;
+  
+  return (
+    <div className="p-3 bg-green-100 border border-green-300 text-green-700 rounded-md text-sm">
+      Registration successful! Please log in with your new account.
+    </div>
+  );
+}
+
 export function LoginForm({
   className,
+  callbackUrl,
   ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+}: React.ComponentPropsWithoutRef<"form"> & {
+  callbackUrl?: string;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [apiError, setApiError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(
-    searchParams.get("registered") === "true" 
-      ? "Registration successful! Please log in with your new account."
-      : null
-  );
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -52,14 +64,14 @@ export function LoginForm({
       setSuccessMessage(null);
 
       // Get the callback URL (where to redirect after login)
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      const redirectUrl = callbackUrl || "/dashboard";
 
       // Use NextAuth.js signIn function
       const result = await signIn("credentials", {
         redirect: false,
         email: data.email,
         password: data.password,
-        callbackUrl,
+        callbackUrl: redirectUrl,
       });
 
       if (!result?.ok) {
@@ -71,7 +83,7 @@ export function LoginForm({
       reset();
       
       // Redirect based on user role (we'll fetch this after we're redirected)
-      router.push(callbackUrl);
+      router.push(redirectUrl);
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);
@@ -92,11 +104,7 @@ export function LoginForm({
         </p>
       </div>
 
-      {successMessage && (
-        <div className="p-3 bg-green-100 border border-green-300 text-green-700 rounded-md text-sm">
-          {successMessage}
-        </div>
-      )}
+      {/* The success message is now rendered by the LoginMessage component */}
 
       {apiError && (
         <div className="p-3 bg-red-100 border border-red-300 text-red-500 rounded-md text-sm">
@@ -155,7 +163,7 @@ export function LoginForm({
           variant="outline" 
           className="w-full hover:cursor-pointer hover:shadow-stone-400"
           onClick={() => {
-            signIn("google", { callbackUrl: "/dashboard" });
+            signIn("google", { callbackUrl: callbackUrl || "/dashboard" });
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3">

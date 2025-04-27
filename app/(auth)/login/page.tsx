@@ -1,6 +1,23 @@
+"use client";
 import Image from "next/image";
-import { LoginForm } from "@/components/auth/login-form";
+import { LoginForm, LoginMessage } from "@/components/auth/login-form";
 import Link from "next/link";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+// Client component that gets the callback URL
+
+function LoginCallbackHandler({ 
+  children 
+}: { 
+  children: (props: { callbackUrl: string | null }) => React.ReactNode 
+}) {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
+  
+  return children({ callbackUrl });
+}
+
 export default function LoginPage() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
@@ -20,8 +37,18 @@ export default function LoginPage() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <LoginForm />
+          <div className="w-full max-w-xs space-y-6">
+            {/* Suspense boundary for components that use useSearchParams */}
+            <Suspense fallback={null}>
+              <LoginMessage />
+            </Suspense>
+            
+            {/* Handle callback URL with Suspense */}
+            <Suspense fallback={<LoginForm />}>
+              <LoginCallbackHandler>
+                {({ callbackUrl }) => <LoginForm callbackUrl={callbackUrl || undefined} />}
+              </LoginCallbackHandler>
+            </Suspense>
           </div>
         </div>
       </div>
