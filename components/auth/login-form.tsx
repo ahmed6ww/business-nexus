@@ -43,7 +43,6 @@ export function LoginForm({
 }) {
   const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -61,7 +60,6 @@ export function LoginForm({
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setApiError(null);
-      setSuccessMessage(null);
 
       // Get the callback URL (where to redirect after login)
       const redirectUrl = callbackUrl || "/dashboard";
