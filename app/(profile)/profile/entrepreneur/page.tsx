@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Search, Filter, ArrowUpDown } from "lucide-react";
+import { User, Search, Filter, ArrowUpDown, AlertTriangle } from "lucide-react";
+import ProfileCreateBanner from "@/components/profile/profile-create-banner";
+import { getMyInvestorProfile } from "@/lib/actions/investors";
+import { useSession } from "next-auth/react";
 
 // Dummy data - will be replaced with actual data from the database
 const entrepreneurs = [
@@ -91,6 +94,29 @@ export default function EntrepreneursPage() {
   const [sortBy, setSortBy] = useState<string>("name-asc");
   const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasInvestorProfile, setHasInvestorProfile] = useState(false);
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || null;
+  
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const investorResult = await getMyInvestorProfile();
+        if (investorResult.success) {
+          setIsAuthenticated(true);
+          setHasInvestorProfile(true);
+        } else if (investorResult.message && !investorResult.message.includes("Unauthorized")) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      }
+    };
+    
+    checkAuth();
+  }, []);
   
   // Extract all unique tags from entrepreneurs
   const allTags = Array.from(
@@ -151,6 +177,28 @@ export default function EntrepreneursPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Role-based information banner */}
+      {userRole === 'entrepreneur' && (
+        <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+          <CardContent className="p-4 flex gap-4 items-center">
+            <AlertTriangle className="h-10 w-10 text-amber-500 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-amber-800 dark:text-amber-300">Entrepreneur Notice</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                This page is primarily designed for investors to discover entrepreneurs. 
+                As an entrepreneur, you might want to <Link href="/profile/investor" className="underline font-medium">explore investor profiles</Link> instead
+                to find potential funding partners.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Investor Profile Creation Banner */}
+      {isAuthenticated && !hasInvestorProfile && userRole !== 'entrepreneur' && (
+        <ProfileCreateBanner type="investor" isAuthenticated={isAuthenticated} />
+      )}
 
       {/* Search and Filter */}
       <div className="grid gap-4 md:grid-cols-4">

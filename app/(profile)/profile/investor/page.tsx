@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Search, Filter, ArrowUpDown, DollarSign, Building } from "lucide-react";
+import { Building2, Search, Filter, ArrowUpDown, DollarSign, Building, AlertTriangle } from "lucide-react";
+import ProfileCreateBanner from "@/components/profile/profile-create-banner";
+import { getMyEntrepreneurProfile } from "@/lib/actions/entrepreneurs";
+import { useSession } from "next-auth/react";
 
 // Dummy data - will be replaced with actual data from the database
 const investors = [
@@ -114,6 +117,29 @@ export default function InvestorsPage() {
   const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedStages, setSelectedStages] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasEntrepreneurProfile, setHasEntrepreneurProfile] = useState(false);
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || null;
+  
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const entrepreneurResult = await getMyEntrepreneurProfile();
+        if (entrepreneurResult.success) {
+          setIsAuthenticated(true);
+          setHasEntrepreneurProfile(true);
+        } else if (entrepreneurResult.message && !entrepreneurResult.message.includes("Unauthorized")) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      }
+    };
+    
+    checkAuth();
+  }, []);
   
   // Handle interest selection
   const toggleInterest = (interest: string) => {
@@ -179,7 +205,7 @@ export default function InvestorsPage() {
         <div>
           <h1 className="text-3xl font-bold">Investor Profiles</h1>
           <p className="text-muted-foreground">
-            Connect with VCs, angel investors, and investment firms looking for opportunities
+            Find investors looking for opportunities in your industry
           </p>
         </div>
         <Link href="/profile">
@@ -188,6 +214,28 @@ export default function InvestorsPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Role-based information banner */}
+      {userRole === 'investor' && (
+        <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+          <CardContent className="p-4 flex gap-4 items-center">
+            <AlertTriangle className="h-10 w-10 text-amber-500 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-amber-800 dark:text-amber-300">Investor Notice</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                This page is primarily designed for entrepreneurs to discover investors. 
+                As an investor, you might want to <Link href="/profile/entrepreneur" className="underline font-medium">explore entrepreneur profiles</Link> instead
+                to find potential investment opportunities.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Entrepreneur Profile Creation Banner */}
+      {isAuthenticated && !hasEntrepreneurProfile && userRole !== 'investor' && (
+        <ProfileCreateBanner type="entrepreneur" isAuthenticated={isAuthenticated} />
+      )}
 
       {/* Search and Filter */}
       <div className="grid gap-4 md:grid-cols-4">
