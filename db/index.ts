@@ -10,7 +10,17 @@ config({ path: ".env" }); // or .env.local
 const sql = neon(process.env.DATABASE_URL!);
 
 // Create a Drizzle ORM instance with our schema
-export const db = drizzle(sql, { schema });
+// Add Drizzle ORM configuration to properly handle relations
+export const db = drizzle(sql, { 
+  schema,
+  // Add explicit logger for debugging
+  logger: {
+    logQuery: (query, params) => {
+      console.log('Query:', query);
+      console.log('Params:', params);
+    },
+  }
+});
 
 // Export a function to run migrations
 export async function runMigrations() {
